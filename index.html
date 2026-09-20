@@ -18,7 +18,7 @@ button,input,select{font:inherit}button{border:1px solid var(--line);background:
 .side{display:flex;flex-direction:column;gap:10px}.card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px}.card h3{margin:0 0 8px;font-size:14px}.row{display:flex;justify-content:space-between;margin:4px 0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.turn{text-align:center;padding:9px;border-radius:9px;background:#3c321e;border:1px solid #6c592d;font-weight:700;margin-bottom:9px}.players span{display:inline-block;padding:4px 7px;border:1px solid var(--line);border-radius:20px;margin:2px;background:#15191e;font-size:12px}
 .bar{height:7px;background:#0e1115;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}.xp i{background:var(--gold)}.log{height:135px;overflow:auto;background:#11151a;border-radius:8px;padding:7px;font-size:12px;color:#cbd0d8}.log div{padding:3px 0;border-bottom:1px solid #252a31}
 .badge{display:inline-block;padding:3px 6px;border-radius:5px;background:#14181d;border:1px solid var(--line);font-size:11px;margin:2px}.muted{color:var(--muted)}.hidden{display:none!important}.mission{line-height:1.5}
-</style>
+.weaponbox{background:#11161c;border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:6px}.dice{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.die{width:34px;height:34px;border-radius:7px;background:#eee;color:#111;display:grid;place-items:center;font-weight:900;font-size:17px}.lastroll{margin-top:8px;color:#d9dee6}</style>
 </head>
 <body><div class="wrap">
 <header><div><h1>🧟 Noche Cero</h1><div class="tag">Edición cooperativa · misión 01: La casa abandonada</div></div><div id="roomBadge" class="tag">Sin sala</div></header>
@@ -33,7 +33,7 @@ button,input,select{font:inherit}button{border:1px solid var(--line);background:
 <div class="card"><h3>👥 Equipo</h3><div id="players" class="players"></div></div>
 <div class="card mission"><h3>🎯 Objetivos</h3><div id="objectives"></div></div>
 <div class="card"><h3>🧍 Superviviente</h3><div id="me"></div></div>
-<div class="card"><h3>🎒 Inventario</h3><div id="inv"></div></div>
+<div class="card"><h3>🎒 Inventario</h3><div id="inv"></div><div class="weaponbox"><select id="weaponSelect"></select><div id="weaponInfo" class="muted"></div><button id="reload" style="margin-top:6px">🔄 Recargar</button></div></div><div class="card"><h3>🎲 Última tirada</h3><div id="lastRoll" class="lastroll">Todavía no has atacado.</div><div id="dice" class="dice"></div></div>
 <div class="card"><h3>⚔️ Acciones</h3><div class="grid2">
 <button id="moveMode">🚶 Mover</button><button id="attack">⚔️ Atacar</button><button id="openDoor">🚪 Abrir</button><button id="search">🔎 Buscar</button><button id="useMed" class="good">🩹 Curar</button><button id="endTurn" class="primary">⏭️ Fin turno</button>
 </div></div>
@@ -132,4 +132,23 @@ $("join").onclick=async()=>{roomCode=$("room").value.trim().toUpperCase();if(!ro
 $("start").onclick=()=>{if(state&&state.players.length===2){state.phase="player";save();render()}};
 function subscribe(){roomRef.on("value",s=>{const d=s.val();if(!d)return;state=d.state||state;if(d.players&&state){d.players.forEach((p,i)=>{if(state.players[i]){state.players[i].uid=p.uid;state.players[i].name=p.name}});render()}if(d.players?.length===2)$("start").classList.remove("hidden")})}
 auth.signInAnonymously().then(r=>{uid=r.user.uid;status("Conectado a Firebase ✓","ok")}).catch(e=>status("Error de Firebase: "+e.message,"err"));
+
+// === Sistema de combate mejorado ===
+const WEAPONS={
+ "Cuchillo":{icon:"🔪",dice:1,hit:4,damage:1,range:1,maxAmmo:null,crit:6,desc:"Cuerpo a cuerpo y sin munición."},
+ "Pistola":{icon:"🔫",dice:1,hit:4,damage:1,range:4,maxAmmo:6,crit:6,desc:"Equilibrada. Un 6 añade +1 daño."},
+ "Escopeta":{icon:"💥",dice:2,hit:4,damage:2,range:3,maxAmmo:2,crit:6,desc:"Dos dados; cada impacto hace 2 daño."},
+ "Subfusil":{icon:"🔫",dice:2,hit:5,damage:1,range:5,maxAmmo:8,crit:null,desc:"Dos dados y alcance 5; impacta con 5+."},
+ "Carabina":{icon:"🎯",dice:1,hit:3,damage:2,range:6,maxAmmo:4,crit:6,desc:"Largo alcance y 2 daño; el 6 es crítico."}
+};
+state=state||null;
+function combatMigrate(){if(!state)return;state.lastRoll=state.lastRoll||null;state.players.forEach(p=>{p.weapon=p.weapon||"Pistola";p.ammo=p.ammo==null?0:p.ammo;const w=WEAPONS[p.weapon]||WEAPONS.Pistola;p.range=w.range;p.damage=w.damage});}
+const oldRender=render;
+render=function(){combatMigrate();oldRender();const p=me&&me();if(!p||!document.getElementById("weaponSelect"))return;const sel=$("weaponSelect");sel.innerHTML=Object.keys(WEAPONS).map(w=>`<option value="${w}" ${w===p.weapon?"selected":""}>${WEAPONS[w].icon} ${w}</option>`).join("");const w=WEAPONS[p.weapon];$("weaponInfo").innerHTML=`${w.icon} ${p.weapon} · ${w.dice} dado(s) · ${w.hit}+ · ${w.damage} daño · alcance ${w.range}<br>${w.desc}`;$("lastRoll").textContent=state.lastRoll?state.lastRoll.text:"Todavía no has atacado.";$("dice").innerHTML=state.lastRoll?state.lastRoll.dice.map(n=>`<span class="die">${n}</span>`).join(""):"";};
+$("weaponSelect").onchange=()=>{if(!active())return;const p=me(),k=$("weaponSelect").value,w=WEAPONS[k];p.weapon=k;p.range=w.range;p.damage=w.damage;if(w.maxAmmo!==null&&p.ammo===0)p.ammo=w.maxAmmo;log(`🔧 ${p.name} equipa ${k}.`);save();render()};
+$("reload").onclick=()=>{if(!active())return;const p=me(),w=WEAPONS[p.weapon];if(w.maxAmmo===null)return log("🔪 El cuchillo no necesita recarga.");if(p.actions<1)return log("No te quedan acciones.");if(p.ammo>=w.maxAmmo)return log("🔋 El cargador ya está lleno.");p.actions--;p.ammo=w.maxAmmo;log(`🔄 ${p.name} recarga ${p.weapon}.`);save();render()};
+clickTile=async function(x,y){if(!active())return;const p=me(),t=state.map[K(x,y)];
+ if(mode==="attack"){const w=WEAPONS[p.weapon],i=state.zombies.findIndex(z=>z.x===x&&z.y===y&&D(p,z)<=w.range);if(i<0||p.actions<1)return;if(w.maxAmmo!==null&&p.ammo<=0)return log("🔋 Sin munición. Recarga primero.");p.actions--;if(w.maxAmmo!==null)p.ammo--;const rolls=Array.from({length:w.dice},()=>R());let damage=0,hits=0,crit=0;rolls.forEach(r=>{if(r>=w.hit){hits++;damage+=w.damage;if(w.crit&&r===w.crit){damage++;crit++}}});const z=state.zombies[i];z.hp-=damage;const text=hits?`💥 ${hits} impacto(s) · ${damage} daño`:`❌ Ningún impacto`;state.lastRoll={dice:rolls,text:`${w.icon} ${p.name} usa ${p.weapon}: ${text}${crit?` · ⭐ ${crit} crítico(s)`:""}`};if(z.hp<=0){state.zombies.splice(i,1);gain(p,z.type==="corredor"?2:1);log(`🧟 ${p.name} elimina a un ${z.type}.`)}else log(state.lastRoll.text);mode="move";save();render();return;}
+ if(D(p,{x,y})!==1||p.actions<1||t.type==="wall"||(t.type==="door"&&!t.open))return;p.x=x;p.y=y;p.actions--;if(t.type==="search"&&!state.key){state.key=true;log(`🔑 ${p.name} encuentra la llave.`)}if(t.type==="exit"&&state.key&&!state.map.some(t=>t.type==="door"&&!t.open)){state.gameOver="win";log("🏆 ¡Habéis escapado!")}save();render();};
+combatMigrate();
 </script></body></html>
