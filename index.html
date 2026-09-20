@@ -1,48 +1,46 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Noche Cero — Cooperativo</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Noche Cero — Edición Cooperativa</title>
 <style>
-:root{--bg:#101216;--panel:#181b22;--panel2:#20242d;--line:#343a46;--text:#f2f4f7;--muted:#9da5b2;--accent:#e6b94a;--danger:#d95d5d;--good:#62c58a;--tile:#292e37}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#202630,#101216 48%,#0a0c0f);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#272c35;color:var(--text);padding:10px 14px;border-radius:9px}button:hover{filter:brightness(1.15)}button.primary{background:#8e6e20;border-color:#b9953d}button.danger{background:#54282b;border-color:#844044}
-.wrap{max-width:1180px;margin:auto;padding:18px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:14px}h1{margin:0;font-size:27px}.sub{color:var(--muted);font-size:13px}
-.setup,.game{background:rgba(24,27,34,.94);border:1px solid var(--line);border-radius:14px;padding:16px}.setup{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:12px}input{background:#0f1217;border:1px solid var(--line);color:#fff;padding:10px;border-radius:8px}
-.status{margin:12px 0;padding:9px 12px;border-radius:9px;background:#171a20;color:var(--muted);font-size:13px}.status.ok{color:var(--good)}.status.err{color:#ff8b8b}
-.layout{display:grid;grid-template-columns:minmax(480px,1fr) 330px;gap:14px}@media(max-width:850px){.layout{grid-template-columns:1fr}}
-.boardWrap{background:#0d0f13;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}.board{display:grid;grid-template-columns:repeat(10,1fr);width:min(720px,100%);aspect-ratio:1;margin:auto;gap:2px}
-.tile{position:relative;min-width:32px;background:var(--tile);border:1px solid #3b414c;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:22px;user-select:none}
-.tile.wall{background:#15181e;color:#555}.tile.door{background:#4a3920;border-color:#a47b2e}.tile.objective{box-shadow:inset 0 0 0 3px #5d7f5f}.tile.exit{box-shadow:inset 0 0 0 3px #557b59}.tile.move{outline:2px solid #72a5df;cursor:pointer}.tile.attack{outline:2px solid #d95d5d;cursor:pointer}
-.coord{position:absolute;left:3px;top:1px;font-size:8px;color:#656d78}.token{position:relative;z-index:2;filter:drop-shadow(0 2px 2px #000)}
-.side{display:flex;flex-direction:column;gap:12px}.card{background:#20242c;border:1px solid var(--line);border-radius:11px;padding:12px}.card h3{margin:0 0 9px;font-size:15px}
-.row{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:13px}.bar{height:7px;background:#101217;border-radius:8px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--good)}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.log{height:145px;overflow:auto;font-size:12px;color:#c7ccd4;background:#12151a;border-radius:8px;padding:8px}.log div{padding:3px 0;border-bottom:1px solid #252a32}
-.players span{display:inline-block;margin:3px;padding:4px 7px;border-radius:20px;background:#15181d;border:1px solid var(--line);font-size:12px}.turn{padding:9px;border-radius:8px;background:#3b321d;border:1px solid #705d2e;text-align:center;font-weight:600}
-.hidden{display:none!important}.legend{font-size:11px;color:var(--muted);line-height:1.5}
+:root{--bg:#0b0e12;--panel:#171b22;--panel2:#202631;--line:#343c49;--txt:#f4f5f7;--muted:#9da6b4;--gold:#d6ad45;--red:#d85b5b;--green:#5fca8a;--blue:#6fa8e8;--floor:#292f39}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#2b323d,#10141a 45%,#090b0e);color:var(--txt);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,select{font:inherit}button{border:1px solid var(--line);background:#272e38;color:var(--txt);padding:9px 12px;border-radius:9px;cursor:pointer}button:hover{filter:brightness(1.16)}button.primary{background:#795f21;border-color:#a88838}button.good{background:#245c40;border-color:#347b57}button.bad{background:#57292d;border-color:#813e45}button:disabled{opacity:.45;cursor:not-allowed}
+.wrap{max-width:1250px;margin:auto;padding:16px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}h1{margin:0;font-size:28px}.tag{color:var(--muted);font-size:12px}
+.setup,.panel{background:rgba(23,27,34,.96);border:1px solid var(--line);border-radius:14px;padding:13px}.setup{display:flex;flex-wrap:wrap;gap:9px;align-items:end}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:11px}input,select{background:#0d1116;color:#fff;border:1px solid var(--line);padding:9px;border-radius:8px}
+.status{margin:10px 0;padding:8px 11px;border-radius:9px;background:#15191f;color:var(--muted)}.ok{color:var(--green)}.err{color:#ff9292}
+.layout{display:grid;grid-template-columns:minmax(520px,1fr) 355px;gap:12px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.boardbox{padding:10px;background:#0a0d11;border:1px solid var(--line);border-radius:13px}.board{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;max-width:760px;aspect-ratio:1;margin:auto}
+.tile{position:relative;background:var(--floor);border:1px solid #3b424d;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:21px;user-select:none;overflow:hidden}
+.tile.wall{background:#12161b;color:#505762}.tile.door{background:#49381f;border-color:#a57d30}.tile.door.open{background:#353a32}.tile.search{box-shadow:inset 0 0 0 3px #687d54}.tile.exit{box-shadow:inset 0 0 0 3px #4c805d}.tile.move{outline:2px solid var(--blue)}.tile.attack{outline:2px solid var(--red)}
+.coord{position:absolute;top:1px;left:2px;font-size:7px;color:#68717d}.token{filter:drop-shadow(0 2px 2px #000);z-index:3}.hpmini{position:absolute;bottom:1px;left:3px;right:3px;height:3px;background:#111}.hpmini i{display:block;height:100%;background:var(--green)}
+.side{display:flex;flex-direction:column;gap:10px}.card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px}.card h3{margin:0 0 8px;font-size:14px}.row{display:flex;justify-content:space-between;margin:4px 0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.turn{text-align:center;padding:9px;border-radius:9px;background:#3c321e;border:1px solid #6c592d;font-weight:700;margin-bottom:9px}.players span{display:inline-block;padding:4px 7px;border:1px solid var(--line);border-radius:20px;margin:2px;background:#15191e;font-size:12px}
+.bar{height:7px;background:#0e1115;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}.xp i{background:var(--gold)}.log{height:135px;overflow:auto;background:#11151a;border-radius:8px;padding:7px;font-size:12px;color:#cbd0d8}.log div{padding:3px 0;border-bottom:1px solid #252a31}
+.badge{display:inline-block;padding:3px 6px;border-radius:5px;background:#14181d;border:1px solid var(--line);font-size:11px;margin:2px}.muted{color:var(--muted)}.hidden{display:none!important}.mission{line-height:1.5}
 </style>
 </head>
-<body>
-<div class="wrap">
-<header><div><h1>🧟 Noche Cero</h1><div class="sub">Supervivencia cooperativa · prototipo online</div></div><div id="roomBadge" class="sub">Sin partida</div></header>
+<body><div class="wrap">
+<header><div><h1>🧟 Noche Cero</h1><div class="tag">Edición cooperativa · misión 01: La casa abandonada</div></div><div id="roomBadge" class="tag">Sin sala</div></header>
 <section class="setup">
-<label>Tu nombre<input id="name" placeholder="Ej. David" maxlength="16"></label>
-<label>Sala<input id="room" placeholder="Ej. ABC123" maxlength="8"></label>
-<button class="primary" id="create">Crear partida</button><button id="join">Unirse</button><button id="start" class="primary hidden">Empezar misión</button>
-</section>
-<div id="status" class="status">Conectando con Firebase…</div>
-<section id="game" class="game hidden">
-<div class="layout"><div><div id="turn" class="turn">Esperando partida…</div><div class="boardWrap" style="margin-top:10px"><div id="board" class="board"></div></div></div>
+<label>Nombre<input id="name" maxlength="16" placeholder="David"></label><label>Sala<input id="room" maxlength="8" placeholder="ABC123"></label>
+<button id="create" class="primary">Crear partida</button><button id="join">Unirse</button><button id="start" class="primary hidden">Comenzar misión</button>
+</section><div id="status" class="status">Conectando…</div>
+
+<section id="game" class="hidden"><div class="layout">
+<main><div id="turn" class="turn">Esperando jugadores…</div><div class="boardbox"><div id="board" class="board"></div></div></main>
 <aside class="side">
-<div class="card"><h3>👥 Supervivientes</h3><div id="players" class="players"></div></div>
-<div class="card"><h3>🎯 Misión</h3><div>Encuentra la <b>🔑 llave</b>, abre la <b>🚪 puerta</b> y llega a la <b>🟢 salida</b>.</div><div class="legend" style="margin-top:7px">Cada turno tienes 3 acciones. Mover, abrir o atacar consume 1.</div></div>
-<div class="card"><h3>🧍 Tu superviviente</h3><div id="me"></div></div>
-<div class="card"><h3>⚔️ Acciones</h3><div class="actions"><button id="attack">Atacar</button><button id="openDoor">Abrir puerta</button><button id="endTurn" class="primary">Terminar turno</button><button id="reset" class="danger">Reiniciar</button></div></div>
+<div class="card"><h3>👥 Equipo</h3><div id="players" class="players"></div></div>
+<div class="card mission"><h3>🎯 Objetivos</h3><div id="objectives"></div></div>
+<div class="card"><h3>🧍 Superviviente</h3><div id="me"></div></div>
+<div class="card"><h3>🎒 Inventario</h3><div id="inv"></div></div>
+<div class="card"><h3>⚔️ Acciones</h3><div class="grid2">
+<button id="moveMode">🚶 Mover</button><button id="attack">⚔️ Atacar</button><button id="openDoor">🚪 Abrir</button><button id="search">🔎 Buscar</button><button id="useMed" class="good">🩹 Curar</button><button id="endTurn" class="primary">⏭️ Fin turno</button>
+</div></div>
 <div class="card"><h3>📜 Registro</h3><div id="log" class="log"></div></div>
-</aside></div></section>
-</div>
+<button id="reset" class="bad">↻ Reiniciar misión</button>
+</aside></div></section></div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -56,96 +54,82 @@ const firebaseConfig={
  appId:"1:843719164928:web:3a5730c10b7fa0ceb004e5",
  databaseURL:"https://noche-cero-default-rtdb.europe-west1.firebasedatabase.app"
 };
-firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth(),db=firebase.database();
-const $=id=>document.getElementById(id);
-let uid=null,roomCode=null,roomRef=null,localState=null,mode="move";
-const setStatus=(t,c="")=>{$("status").textContent=t;$("status").className="status "+c};
-const log=t=>{const d=document.createElement("div");d.textContent=t;$("log").prepend(d)};
-const rnd=n=>Math.floor(Math.random()*n)+1;
-const key=(x,y)=>y*10+x;
-function map(){
- const a=Array.from({length:100},()=>({type:"floor"}));
- for(let y=0;y<10;y++)for(let x=0;x<10;x++)if(x===0||y===0||x===9||y===9)a[key(x,y)]={type:"wall"};
- [[4,2],[5,2],[4,3],[5,3],[2,6],[2,7],[7,5],[7,6]].forEach(p=>a[key(p[0],p[1])]={type:"wall"});
- a[key(5,7)]={type:"door",open:false};a[key(8,8)]={type:"exit"};a[key(3,2)]={type:"objective"};return a;
+firebase.initializeApp(firebaseConfig);const auth=firebase.auth(),db=firebase.database();const $=id=>document.getElementById(id);
+let uid=null,roomCode=null,roomRef=null,state=null,mode="move";
+const K=(x,y)=>y*12+x,R=()=>Math.floor(Math.random()*6)+1,D=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+function status(t,c=""){ $("status").textContent=t;$("status").className="status "+c}
+function log(t){const d=document.createElement("div");d.textContent=t;$("log").prepend(d)}
+function makeMap(){
+ const a=Array.from({length:144},()=>({type:"floor"}));
+ for(let y=0;y<12;y++)for(let x=0;x<12;x++)if(x===0||y===0||x===11||y===11)a[K(x,y)]={type:"wall"};
+ // habitaciones/paredes originales
+ [[4,2],[5,2],[6,2],[4,3],[6,3],[4,4],[6,4],[2,7],[3,7],[4,7],[2,8],[4,8],[2,9],[3,9],[4,9],[8,5],[9,5],[8,6],[9,6],[8,7],[9,7]].forEach(p=>a[K(p[0],p[1])]={type:"wall"});
+ a[K(6,5)]={type:"door",open:false};a[K(5,6)]={type:"door",open:false};a[K(3,5)]={type:"search"};a[K(9,9)]={type:"exit"};return a;
 }
 function initial(){
- return {turn:0,phase:"player",currentPlayer:0,keyFound:false,doorOpen:false,gameOver:false,tiles:map(),
- players:[{uid:uid,name:$("name").value.trim()||"Jugador 1",x:2,y:2,hp:3,maxHp:3,actions:3,weapon:"Pistola",damage:1,range:4},
- {uid:null,name:"Esperando jugador 2",x:7,y:7,hp:3,maxHp:3,actions:3,weapon:"Cuchillo",damage:1,range:1}],
- zombies:[{id:"z1",x:6,y:2,hp:1},{id:"z2",x:7,y:3,hp:1},{id:"z3",x:3,y:7,hp:1}]};
+ return {turn:0,current:0,phase:"player",gameOver:null,key:false,medkits:1,map:makeMap(),
+ players:[
+ {uid,name:$("name").value.trim()||"Jugador 1",x:2,y:2,hp:4,maxHp:4,actions:3,xp:0,level:1,weapon:"Pistola",damage:1,range:4,ammo:6,med:1},
+ {uid:null,name:"Esperando jugador 2",x:9,y:8,hp:4,maxHp:4,actions:3,xp:0,level:1,weapon:"Cuchillo",damage:1,range:1,ammo:0,med:1}],
+ zombies:[
+ {id:"z1",type:"caminante",x:7,y:2,hp:1,maxHp:1,move:1,damage:1},
+ {id:"z2",type:"corredor",x:8,y:3,hp:1,maxHp:1,move:2,damage:1},
+ {id:"z3",type:"caminante",x:5,y:8,hp:1,maxHp:1,move:1,damage:1}]};
 }
-const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
-const meIndex=()=>localState?localState.players.findIndex(p=>p.uid===uid):-1;
-const canAct=()=>localState&&!localState.gameOver&&localState.phase==="player"&&localState.currentPlayer===meIndex();
-function save(){if(roomRef)roomRef.child("state").set(localState)}
+function me(){return state.players[state.players.findIndex(p=>p.uid===uid)]}
+function mi(){return state.players.findIndex(p=>p.uid===uid)}
+function active(){return state&&!state.gameOver&&state.current===mi()}
+function save(){if(roomRef)roomRef.child("state").set(state)}
+function gain(p,n){p.xp+=n;if(p.xp>=p.level*5){p.xp-=p.level*5;p.level++;p.maxHp++;p.hp=Math.min(p.maxHp,p.hp+1);log(`⭐ ${p.name} sube a nivel ${p.level}.`)}}
 function render(){
- if(!localState)return;$("game").classList.remove("hidden");$("roomBadge").textContent="Sala: "+roomCode;
- const cur=localState.players[localState.currentPlayer];
- $("turn").textContent=localState.gameOver?(localState.gameOver==="win"?"🏆 Misión completada":"💀 Los supervivientes han caído"):`Turno ${localState.turn+1} · ${cur?cur.name:"Jugador"}`;
- $("players").innerHTML=localState.players.map((p,i)=>`<span>${i===localState.currentPlayer?"▶ ":""}${p.name} · ❤️ ${p.hp}</span>`).join("");
- const me=localState.players[meIndex()];
- $("me").innerHTML=me?`<b>${me.name}</b><div>❤️ ${me.hp}/${me.maxHp}</div><div>🔫 ${me.weapon} · daño ${me.damage} · alcance ${me.range}</div><div>⚡ Acciones: <b>${me.actions}</b>/3</div><div class="bar"><i style="width:${Math.max(0,me.hp)/me.maxHp*100}%"></i></div>`:"";
+ if(!state)return;$("game").classList.remove("hidden");$("roomBadge").textContent="Sala: "+roomCode;
+ const cur=state.players[state.current];$("turn").textContent=state.gameOver?(state.gameOver==="win"?"🏆 Misión completada":"💀 Derrota"):`Turno ${state.turn+1} · ${cur.name}`;
+ $("players").innerHTML=state.players.map((p,i)=>`<span>${i===state.current?"▶ ":""}${p.name} · ❤️ ${p.hp}</span>`).join("");
+ const p=me();$("me").innerHTML=p?`<b>${p.name}</b><div>❤️ ${p.hp}/${p.maxHp} · ⚡ ${p.actions}/3</div><div>🔫 ${p.weapon} · daño ${p.damage} · alcance ${p.range}</div><div>🎯 XP ${p.xp}/${p.level*5} · Nivel ${p.level}</div><div class="bar"><i style="width:${p.hp/p.maxHp*100}%"></i></div><div class="bar xp" style="margin-top:4px"><i style="width:${p.xp/(p.level*5)*100}%"></i></div>`:"";
+ $("inv").innerHTML=p?`<span class="badge">🔫 ${p.weapon}</span><span class="badge">🔫 Munición: ${p.ammo}</span><span class="badge">🩹 Botiquines: ${p.med}</span>${state.key?'<span class="badge">🔑 Llave</span>':""}`:"";
+ $("objectives").innerHTML=`${state.key?"✅":"⬜"} Encontrar la llave<br>${state.map.find(t=>t.type==="door"&&!t.open)?"⬜":"✅"} Abrir las puertas<br>${state.key&&state.map.find(t=>t.type==="door"&&!t.open)===undefined?"⬜":"⬜"} Llegar a 🟢 salida`;
  const b=$("board");b.innerHTML="";
- for(let y=0;y<10;y++)for(let x=0;x<10;x++){
-  const t=localState.tiles[key(x,y)]||{type:"floor"};const d=document.createElement("div");d.className="tile";
-  if(t.type==="wall")d.classList.add("wall");if(t.type==="door")d.classList.add("door");if(t.type==="objective")d.classList.add("objective");if(t.type==="exit")d.classList.add("exit");
-  d.innerHTML=`<span class="coord">${x},${y}</span>${t.type==="wall"?"":t.type==="door"?(t.open?"🚪":"🔒"):t.type==="exit"?"🟢":t.type==="objective"?(localState.keyFound?"":"🔑"):""}`;
-  localState.players.forEach((p,i)=>{if(p.x===x&&p.y===y)d.insertAdjacentHTML("beforeend",`<span class="token">${i===0?"🧍":"🧑"}</span>`)});
-  localState.zombies.forEach(z=>{if(z.x===x&&z.y===y)d.insertAdjacentHTML("beforeend",`<span class="token">🧟</span>`)});
-  if(canAct()&&mode==="move"){const m=localState.players[meIndex()];if(dist(m,{x,y})===1&&t.type!=="wall"&&!(t.type==="door"&&!t.open))d.classList.add("move")}
-  if(canAct()&&mode==="attack"){const m=localState.players[meIndex()];if(localState.zombies.some(z=>z.x===x&&z.y===y&&dist(m,z)<=m.range))d.classList.add("attack")}
-  d.onclick=()=>tileClick(x,y);b.appendChild(d);
+ for(let y=0;y<12;y++)for(let x=0;x<12;x++){const t=state.map[K(x,y)]||{type:"floor"};const d=document.createElement("div");d.className="tile";
+  if(t.type==="wall")d.classList.add("wall");if(t.type==="door"){d.classList.add("door");if(t.open)d.classList.add("open")}if(t.type==="search")d.classList.add("search");if(t.type==="exit")d.classList.add("exit");
+  d.innerHTML=`<span class="coord">${x},${y}</span>${t.type==="wall"?"":t.type==="door"?(t.open?"🚪":"🔒"):t.type==="search"?(state.key?"":"🔎"):t.type==="exit"?"🟢":""}`;
+  state.players.forEach((q,i)=>{if(q.x===x&&q.y===y)d.insertAdjacentHTML("beforeend",`<span class="token">${i===0?"🧍":"🧑"}</span>`)});
+  state.zombies.forEach(z=>{if(z.x===x&&z.y===y)d.insertAdjacentHTML("beforeend",`<span class="token">${z.type==="corredor"?"🏃":"🧟"}</span>`)});
+  if(active()&&mode==="move"&&D(p,{x,y})===1&&t.type!=="wall"&&!(t.type==="door"&&!t.open))d.classList.add("move");
+  if(active()&&mode==="attack"&&state.zombies.some(z=>z.x===x&&z.y===y&&D(p,z)<=p.range))d.classList.add("attack");
+  d.onclick=()=>clickTile(x,y);b.appendChild(d);
  }
 }
-function tileClick(x,y){
- if(!canAct())return;const m=localState.players[meIndex()],t=localState.tiles[key(x,y)];
- if(mode==="attack"){
-  const zi=localState.zombies.findIndex(z=>z.x===x&&z.y===y&&dist(m,z)<=m.range);if(zi<0||m.actions<1)return;
-  m.actions--;const roll=rnd(6);
-  if(roll>=4){localState.zombies.splice(zi,1);log(`${m.name} elimina un zombi (🎲 ${roll}).`)}else log(`${m.name} falla el ataque (🎲 ${roll}).`);
+function clickTile(x,y){
+ if(!active())return;const p=me(),t=state.map[K(x,y)];
+ if(mode==="attack"){const i=state.zombies.findIndex(z=>z.x===x&&z.y===y&&D(p,z)<=p.range);if(i<0||p.actions<1)return;
+  if(p.weapon==="Pistola"&&p.ammo<=0)return log("Sin munición.");
+  p.actions--;if(p.weapon==="Pistola")p.ammo--;const r=R();
+  if(r>=4){const z=state.zombies[i];state.zombies.splice(i,1);gain(p,z.type==="corredor"?2:1);log(`⚔️ ${p.name} elimina a un ${z.type} (🎲 ${r}).`)}else log(`💨 ${p.name} falla (🎲 ${r}).`);
   mode="move";save();render();return;
  }
- if(dist(m,{x,y})!==1||m.actions<1||t.type==="wall"||(t.type==="door"&&!t.open))return;
- m.x=x;m.y=y;m.actions--;
- if(t.type==="objective"&&!localState.keyFound){localState.keyFound=true;log(`${m.name} encuentra la 🔑 llave.`)}
- if(t.type==="exit"&&localState.keyFound&&localState.doorOpen){localState.gameOver="win";log("🏆 ¡Habéis escapado!")}
+ if(D(p,{x,y})!==1||p.actions<1||t.type==="wall"||(t.type==="door"&&!t.open))return;
+ p.x=x;p.y=y;p.actions--;
+ if(t.type==="search"&&!state.key){state.key=true;log(`🔑 ${p.name} encuentra la llave.`)}
+ if(t.type==="exit"&&state.key&&!state.map.some(t=>t.type==="door"&&!t.open)){state.gameOver="win";log("🏆 ¡Habéis escapado!")}
  save();render();
 }
-$("attack").onclick=()=>{mode="attack";render();log("Selecciona un zombi dentro del alcance.")};
-$("openDoor").onclick=()=>{
- if(!canAct())return;const m=localState.players[meIndex()],i=localState.tiles.findIndex(t=>t.type==="door"&&!t.open);if(i<0||m.actions<1)return;
- const x=i%10,y=Math.floor(i/10);if(dist(m,{x,y})!==1)return log("Acércate a la puerta.");
- m.actions--;localState.tiles[i].open=true;localState.doorOpen=true;log(`${m.name} abre la puerta.`);save();render();
-};
-$("endTurn").onclick=()=>{
- if(!canAct())return;localState.players[meIndex()].actions=3;localState.currentPlayer=(localState.currentPlayer+1)%2;
- if(localState.currentPlayer===0){localState.turn++;zombiePhase()}save();render();
-};
+$("moveMode").onclick=()=>{mode="move";render()};$("attack").onclick=()=>{mode="attack";render();log("Selecciona un enemigo dentro del alcance.")};
+$("openDoor").onclick=()=>{if(!active())return;const p=me();const i=state.map.findIndex(t=>t.type==="door"&&!t.open);if(i<0||p.actions<1)return;const x=i%12,y=Math.floor(i/12);if(D(p,{x,y})!==1)return log("Acércate a una puerta cerrada.");p.actions--;state.map[i].open=true;log(`🚪 ${p.name} abre una puerta.`);save();render()};
+$("search").onclick=()=>{if(!active())return;const p=me(),i=state.map.findIndex(t=>t.type==="search");if(D(p,{x:i%12,y:Math.floor(i/12)})!==0||p.actions<1)return log("Debes estar sobre una zona de búsqueda.");p.actions--;if(!state.key){state.key=true;log(`🔑 ${p.name} encuentra la llave.`)}else{p.ammo+=2;log(`🎒 ${p.name} encuentra 2 balas.`)}save();render()};
+$("useMed").onclick=()=>{if(!active())return;const p=me();if(p.med<1||p.hp>=p.maxHp||p.actions<1)return;p.med--;p.actions--;p.hp=Math.min(p.maxHp,p.hp+2);log(`🩹 ${p.name} recupera vida.`);save();render()};
+$("endTurn").onclick=()=>{if(!active())return;me().actions=3;state.current=(state.current+1)%2;if(state.current===0){state.turn++;zombiePhase()}save();render()};
 function zombiePhase(){
- localState.zombies.forEach(z=>{const targets=localState.players.filter(p=>p.hp>0);if(!targets.length)return;targets.sort((a,b)=>dist(z,a)-dist(z,b));const t=targets[0];
- if(dist(z,t)<=1){t.hp--;log(`🧟 ataca a ${t.name}.`)}else{const dx=Math.sign(t.x-z.x),dy=Math.sign(t.y-z.y);let nx=z.x,ny=z.y;
- if(Math.abs(t.x-z.x)>=Math.abs(t.y-z.y))nx+=dx;else ny+=dy;const tt=localState.tiles[key(nx,ny)];if(tt&&tt.type!=="wall"&&!(tt.type==="door"&&!tt.open)){z.x=nx;z.y=ny}}});
- if(localState.turn%2===0){const s=[[1,1],[8,1],[1,8],[8,8]][rnd(4)-1];localState.zombies.push({id:"z"+Date.now(),x:s[0],y:s[1],hp:1});log("🧟 Aparece un nuevo zombi.")}
- if(localState.players.some(p=>p.hp<=0))localState.gameOver="lose";
+ state.zombies.forEach(z=>{let targets=state.players.filter(p=>p.hp>0);if(!targets.length)return;targets.sort((a,b)=>D(z,a)-D(z,b));const t=targets[0];
+  if(D(z,t)<=1){t.hp-=z.damage;log(`🧟 ${z.type} hiere a ${t.name}.`);return}
+  for(let s=0;s<z.move;s++){const dx=Math.sign(t.x-z.x),dy=Math.sign(t.y-z.y);let nx=z.x,ny=z.y;if(Math.abs(t.x-z.x)>=Math.abs(t.y-z.y))nx+=dx;else ny+=dy;const q=state.map[K(nx,ny)];if(q&&q.type!=="wall"&&!(q.type==="door"&&!q.open)){z.x=nx;z.y=ny}else break;if(D(z,t)<=1)break}
+ });
+ if(state.turn%2===0){const s=[[1,1],[10,1],[1,10],[10,10]][R()%4];state.zombies.push({id:"z"+Date.now(),type:state.turn%4===0?"corredor":"caminante",x:s[0],y:s[1],hp:1,maxHp:1,move:state.turn%4===0?2:1,damage:1});log("🚨 ¡Aparece otro zombi!")}
+ if(state.players.some(p=>p.hp<=0))state.gameOver="lose";
 }
-$("reset").onclick=()=>{if(confirm("¿Reiniciar la misión?")){localState=initial();save();render()}};
-$("create").onclick=async()=>{
- roomCode=($("room").value.trim()||Math.random().toString(36).slice(2,8)).toUpperCase();$("room").value=roomCode;
- roomRef=db.ref("rooms/"+roomCode);if((await roomRef.get()).exists())return setStatus("Esa sala ya existe.","err");
- const n=$("name").value.trim()||"Jugador 1";localState=initial();await roomRef.set({players:[{uid,name:n}],state:localState,createdAt:Date.now()});
- $("start").classList.remove("hidden");setStatus("Sala creada. Comparte el código "+roomCode,"ok");subscribe();
-};
-$("join").onclick=async()=>{
- roomCode=$("room").value.trim().toUpperCase();if(!roomCode)return setStatus("Escribe el código de sala.","err");
- roomRef=db.ref("rooms/"+roomCode);const s=await roomRef.get();if(!s.exists())return setStatus("No existe esa sala.","err");
- const d=s.val();if(d.players.length>=2)return setStatus("La sala está llena.","err");d.players.push({uid,name:$("name").value.trim()||"Jugador 2"});await roomRef.set(d);setStatus("Te has unido a la sala.","ok");subscribe();
-};
-$("start").onclick=()=>{if(localState&&localState.players.length===2){localState.phase="player";localState.players[1].uid=localState.players[1].uid||"pending";save();render()}};
-function subscribe(){
- roomRef.on("value",s=>{const d=s.val();if(!d)return;localState=d.state||localState;if(d.players&&localState){localState.players.forEach((p,i)=>{if(d.players[i]){p.uid=d.players[i].uid;p.name=d.players[i].name}});render()}if(d.players?.length===2)$("start").classList.remove("hidden")});
-}
-auth.signInAnonymously().then(r=>{uid=r.user.uid;setStatus("Conectado a Firebase ✓","ok")}).catch(e=>setStatus("Error de Firebase: "+e.message,"err"));
-</script>
-</body></html>
+$("reset").onclick=()=>{if(confirm("¿Reiniciar misión?")){state=initial();save();render()}};
+$("create").onclick=async()=>{roomCode=($("room").value.trim()||Math.random().toString(36).slice(2,8)).toUpperCase();$("room").value=roomCode;roomRef=db.ref("rooms/"+roomCode);if((await roomRef.get()).exists())return status("La sala ya existe.","err");state=initial();await roomRef.set({players:[{uid,name:$("name").value.trim()||"Jugador 1"}],state,createdAt:Date.now()});$("start").classList.remove("hidden");status("Sala creada: "+roomCode,"ok");subscribe()};
+$("join").onclick=async()=>{roomCode=$("room").value.trim().toUpperCase();if(!roomCode)return status("Escribe el código.","err");roomRef=db.ref("rooms/"+roomCode);const s=await roomRef.get();if(!s.exists())return status("No existe esa sala.","err");const d=s.val();if(d.players.length>=2)return status("Sala llena.","err");d.players.push({uid,name:$("name").value.trim()||"Jugador 2"});await roomRef.set(d);status("Te has unido.","ok");subscribe()};
+$("start").onclick=()=>{if(state&&state.players.length===2){state.phase="player";save();render()}};
+function subscribe(){roomRef.on("value",s=>{const d=s.val();if(!d)return;state=d.state||state;if(d.players&&state){d.players.forEach((p,i)=>{if(state.players[i]){state.players[i].uid=p.uid;state.players[i].name=p.name}});render()}if(d.players?.length===2)$("start").classList.remove("hidden")})}
+auth.signInAnonymously().then(r=>{uid=r.user.uid;status("Conectado a Firebase ✓","ok")}).catch(e=>status("Error de Firebase: "+e.message,"err"));
+</script></body></html>
