@@ -28,13 +28,14 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 .choice small{display:block;margin-top:6px;font-weight:400;color:#d0dbe1}
 .layout{display:grid;grid-template-columns:minmax(330px,1fr) 350px;gap:14px;margin-top:14px}
 .panel{margin:0}
-.boardWrap{position:relative;max-width:780px;margin:auto;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#05070a;box-shadow:inset 0 0 40px 10px #000b}
+.boardWrap{position:relative;max-width:980px;margin:auto;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#05070a;box-shadow:inset 0 0 40px 10px #000b}
 #boardWrap3d{width:100%;height:100%;touch-action:none;cursor:grab}
 #boardWrap3d canvas{display:block;width:100%;height:100%}
 #boardWrap3d:active{cursor:grabbing}
 #board3dHint{position:absolute;left:8px;bottom:6px;font-size:11px;color:#cfe0ea99;background:#0007;padding:3px 7px;border-radius:6px;pointer-events:none}
 .hp{position:absolute;right:1px;bottom:0;font-size:8px;color:#fff}
-.stat{flex:1 1 150px;min-width:145px;max-width:220px;padding:8px 9px;border:1px solid #2c3942;border-radius:9px;font-size:12.5px;background:#141b21}
+.stat{flex:1 1 150px;min-width:145px;max-width:220px;padding:8px 9px;border:1px solid #2c3942;border-radius:9px;font-size:12.5px;background:#141b21;transition:box-shadow .2s,border-color .2s}
+.stat.active-stat{border-color:#f4d86e;box-shadow:0 0 0 2px #f4d86e55,0 0 14px 2px #f4d86e44}
 #survivors{display:flex;flex-wrap:wrap;gap:7px}
 .backpack{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .backpack button{padding:4px 6px;font-size:11px;border-radius:6px}
@@ -115,7 +116,7 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 
 <main id="game" class="hidden"><div class="layout">
   <section class="panel"><div class="boardWrap"><div id="boardWrap3d"></div><div id="board3dHint">🖱️ arrastra para rotar · rueda/pellizco para zoom · toca una casilla para actuar</div></div>
-    <p class="help">🚪 puerta de edificio · 🔷 casilla a la que puedes moverte · 🔑 llave · 🎯 objetivo · 🟢 salida · 🧌 zombi brutal · 🔦 la luz sigue al superviviente activo · 🔎 buscar da un arma (10 tipos) o una bonificación (10 tipos)</p>
+    <p class="help">🚪 puerta (abre una sala) · 🔷 casillas a las que puedes moverte (toca la más lejana para ir directo) · 🔎 zona de búsqueda: arma (10 tipos) o bonificación (10 tipos) · 🔑 llave · 🎯 objetivo · 🟢 salida · 🧌 zombi brutal · 🔦 la luz sigue al superviviente activo</p>
   </section>
   <aside class="panel">
     <div class="title">Supervivientes</div><div id="survivors"></div>
@@ -174,15 +175,15 @@ const weapons={
 };
 
 const walls=new Set([
-  '1,1','2,1','3,1','1,2','2,2','3,2','1,3','2,3','3,3',
-  '8,1','9,1','10,1','8,2','9,2','10,2','8,3','9,3','10,3',
-  '1,8','2,8','3,8','1,9','2,9','3,9','1,10','2,10','3,10',
-  '8,8','9,8','10,8','8,9','9,9','10,9','8,10','9,10','10,10',
+  '1,1','2,1','3,1','1,2','3,2','1,3','2,3','3,3',
+  '8,1','9,1','10,1','8,2','10,2','8,3','9,3','10,3',
+  '1,8','2,8','3,8','1,9','3,9','1,10','2,10','3,10',
+  '8,8','9,8','10,8','8,9','10,9','8,10','9,10','10,10',
   '5,5','6,5','5,6','6,6'
 ]);
 const doorTiles={'2,3':false,'9,3':false,'2,8':false,'9,8':false};
 for(const k of Object.keys(doorTiles)) walls.delete(k);
-const searches=['2,4','9,4','2,7','9,7','6,1','6,10','1,6','10,6'];
+const searches=['2,4','9,4','2,7','9,7','6,1','6,10','1,6','10,6','2,2','9,2','2,9','9,9'];
 const special={key:'6,3',objective:'6,8',exit:'11,10'};
 const decor=[{x:0,y:3,t:'crate'},{x:11,y:3,t:'car'},{x:0,y:8,t:'crate'},{x:11,y:8,t:'car'},{x:4,y:0,t:'crate'},{x:7,y:0,t:'barrel'},{x:4,y:11,t:'crate'},{x:7,y:11,t:'car'}];
 
@@ -232,6 +233,32 @@ function isOpen(x,y){return !isDoor(x,y)||state.doors[key(x,y)]}
 function blocked(x,y){return isWall(x,y)||!isOpen(x,y)||state.survivors.some(s=>s.hp>0&&s.x===x&&s.y===y)||state.zombies.some(z=>z.hp>0&&z.x===x&&z.y===y)}
 function dist(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)}
 function adjacent(a,b){return dist(a,b)===1}
+function reachableCells(s,maxSteps){
+  const startKey=key(s.x,s.y);
+  const distMap={[startKey]:0}, prev={}, queue=[[s.x,s.y]];
+  while(queue.length){
+    const [cx,cy]=queue.shift();
+    const d=distMap[key(cx,cy)];
+    if(d>=maxSteps)continue;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=cx+dx, ny=cy+dy;
+      if(nx<0||ny<0||nx>=W||ny>=H)continue;
+      const nk=key(nx,ny);
+      if(nk in distMap)continue;
+      if(blocked(nx,ny))continue;
+      distMap[nk]=d+1;prev[nk]=key(cx,cy);
+      queue.push([nx,ny]);
+    }
+  }
+  delete distMap[startKey];
+  return {dist:distMap,prev};
+}
+function pathTo(prev,destKey){
+  const path=[destKey];
+  let cur=destKey;
+  while(prev[cur]){cur=prev[cur];path.push(cur);}
+  return path.reverse().slice(1);
+}
 function active(){return state.survivors[state.active]}
 function log(t){state.log.unshift(t);state.log=state.log.slice(0,100)}
 function addXp(s,n){
@@ -420,6 +447,7 @@ function showEndBanner(text){
 // --- Juego ---
 function setMode(m){if(canAct())mode=m;refresh()}
 function canAct(){return state&&!state.winner&&(state.solo||state.active===player)&&active().hp>0}
+function canSpend(){return canAct()&&active().actions>0}
 
 function refresh(){
   if(!state)return;
@@ -436,12 +464,13 @@ function refresh(){
       const bw=weapons[b.key];
       return '<button class="'+(i===v.activeWeapon?'equipped':'secondary')+'" title="'+bw.name+'" '+(canSwitch&&i!==v.activeWeapon?'onclick="switchWeapon('+v.id+','+i+')"':'disabled')+'>'+bw.name.split(' ')[0]+'</button>';
     }).join('');
-    return '<div class="stat">'+(v.id===state.active?'👉 ':'')+v.emoji+' <b>'+v.name+'</b> <span class="dim">Nv.'+v.level+' · XP '+v.xp+'</span><br>❤ '+v.hp+'/'+v.maxHp+' · '+w.name+' '+ammo+'<br><span class="dim">🎒 '+v.inventory.join(', ')+'</span><div class="backpack">'+bag+'</div></div>';
+    return '<div class="stat'+(v.id===state.active?' active-stat':'')+'">'+v.emoji+' <b>'+v.name+'</b> <span class="dim">Nv.'+v.level+' · XP '+v.xp+'</span><br>❤ '+v.hp+'/'+v.maxHp+' · '+w.name+' '+ammo+'<br><span class="dim">🎒 '+v.inventory.join(', ')+'</span><div class="backpack">'+bag+'</div></div>';
   }).join('');
   document.getElementById('log').innerHTML=state.log.map(x=>'<div>'+x+'</div>').join('');
-  const hint=state.winner?'Partida terminada.':!canAct()?'Espera el turno correspondiente.':mode==='move'?'Elige una casilla adyacente.':mode==='attack'?'Elige un zombi dentro del alcance de tu arma.':'Elige una acción o termina el turno.';
+  const hint=state.winner?'Partida terminada.':!canAct()?'Espera el turno correspondiente.':!canSpend()?'Sin acciones: termina el turno.':mode==='move'?'Toca cualquier casilla iluminada; puedes moverte varias casillas de una vez.':mode==='attack'?'Elige un zombi dentro del alcance de tu arma.':'Elige una acción o termina el turno.';
   document.getElementById('modeHint').textContent=hint;
-  for(const id of ['moveBtn','attackBtn','searchBtn','doorBtn','healBtn','reloadBtn','endBtn'])document.getElementById(id).disabled=!canAct();
+  for(const id of ['moveBtn','attackBtn','searchBtn','doorBtn','healBtn','reloadBtn'])document.getElementById(id).disabled=!canSpend();
+  document.getElementById('endBtn').disabled=!canAct();
   if(!threeReady)initThree();
   updateBoard3D();
   const turnKey=state.turn+'-'+state.active;
@@ -463,7 +492,7 @@ function initThree(){
   scene.fog=new THREE.Fog(0x05070a,9,24);
 
   camera=new THREE.PerspectiveCamera(50,1,0.1,100);
-  camera.position.set(W/2,9.5,H*1.05);
+  camera.position.set(W/2,8,H*0.92);
 
   renderer=new THREE.WebGLRenderer({antialias:true});
   container.appendChild(renderer.domElement);
@@ -474,9 +503,9 @@ function initThree(){
   controls.minDistance=4;controls.maxDistance=26;
   controls.update();
 
-  scene.add(new THREE.AmbientLight(0x4a5b6e,0.55));
-  scene.add(new THREE.HemisphereLight(0x3a4a55,0x0a0a0a,0.35));
-  flashLight=new THREE.PointLight(0xffe6bd,1.6,10,2);
+  scene.add(new THREE.AmbientLight(0x6a7b8e,0.95));
+  scene.add(new THREE.HemisphereLight(0x5a6a75,0x20242a,0.7));
+  flashLight=new THREE.PointLight(0xffe6bd,2.2,13,2);
   flashLight.position.set(1,1.8,1);
   scene.add(flashLight);
 
@@ -535,6 +564,9 @@ function buildStaticBoard(){
     const ring=new THREE.Mesh(new THREE.RingGeometry(0.28,0.4,20),new THREE.MeshBasicMaterial({color:0xb9903d,side:THREE.DoubleSide}));
     ring.rotation.x=-Math.PI/2;ring.position.set(sx+0.5,0.01,sy+0.5);
     scene.add(ring);
+    const label=makeLabel('🔎','#ffe9b0','rgba(90,60,10,0.55)');
+    label.position.set(sx+0.5,0.55+Math.sin((sx+sy)*0.7)*0.02,sy+0.5);
+    scene.add(label);
   }
   for(const p of decor){
     let mesh;
@@ -562,18 +594,38 @@ function makeHumanoid(bodyColor,headColor,scale){
   g.add(body,head);
   return g;
 }
+function makeLabel(text,color,bg){
+  const canvas=document.createElement('canvas');
+  canvas.width=128;canvas.height=64;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return new THREE.Object3D();
+  ctx.fillStyle=bg||'rgba(0,0,0,0.55)';
+  ctx.beginPath();
+  if(ctx.roundRect)ctx.roundRect(4,14,120,36,10);else ctx.rect(4,14,120,36);
+  ctx.fill();
+  ctx.font='bold 34px sans-serif';
+  ctx.fillStyle=color||'#ffffff';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,64,33);
+  const tex=new THREE.CanvasTexture(canvas);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
+  const sprite=new THREE.Sprite(mat);
+  sprite.scale.set(0.7,0.35,1);
+  sprite.renderOrder=999;
+  return sprite;
+}
 function updateBoard3D(){
   if(!threeReady)return;
   while(dynamicGroup.children.length)dynamicGroup.remove(dynamicGroup.children[0]);
-  if(mode==='move'&&canAct()){
+  if(mode==='move'&&canSpend()){
     const s=active();
-    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      const nx=s.x+dx, ny=s.y+dy;
-      if(nx>=0&&ny>=0&&nx<W&&ny<H&&!blocked(nx,ny)){
-        const hl=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.03,0.9),new THREE.MeshStandardMaterial({color:0x3ddcff,emissive:0x1a6a8a,emissiveIntensity:0.9,transparent:true,opacity:0.6}));
-        hl.position.set(nx+0.5,0.03,ny+0.5);
-        dynamicGroup.add(hl);
-      }
+    const {dist:reach}=reachableCells(s,s.actions);
+    for(const k of Object.keys(reach)){
+      const [nx,ny]=k.split(',').map(Number);
+      const steps=reach[k];
+      const hl=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.03,0.9),new THREE.MeshStandardMaterial({color:0x3ddcff,emissive:0x1a6a8a,emissiveIntensity:Math.max(0.25,1-steps*0.15),transparent:true,opacity:Math.max(0.25,0.6-steps*0.08)}));
+      hl.position.set(nx+0.5,0.03,ny+0.5);
+      dynamicGroup.add(hl);
     }
   }
   for(const k of Object.keys(state.doors)){
@@ -609,14 +661,21 @@ function updateBoard3D(){
       tok.add(ring);
       flashLight.position.set(s.x+0.5,1.8,s.y+0.5);
     }
+    const label=makeLabel('❤'+s.hp,'#ffffff');
+    label.position.y=1.0;
+    tok.add(label);
     dynamicGroup.add(tok);
   }
   for(const z of state.zombies){
     if(z.hp<=0)continue;
     const isFlash=z.id===flashId&&Date.now()<flashUntil;
     const base=z.type==='brute'?0x521a1f:(z.type==='runner'?0x9a4a2a:0x7d343a);
-    const tok=makeHumanoid(isFlash?0xff9999:base,0x4a3a3a,z.type==='brute'?1.3:1);
+    const scale=z.type==='brute'?1.3:1;
+    const tok=makeHumanoid(isFlash?0xff9999:base,0x4a3a3a,scale);
     tok.position.set(z.x+0.5,0,z.y+0.5);
+    const label=makeLabel('❤'+z.hp,'#ffcccc');
+    label.position.y=0.85*scale;
+    tok.add(label);
     dynamicGroup.add(tok);
   }
 }
@@ -640,12 +699,24 @@ function animate(){
 }
 
 async function clickCell(x,y){
-  if(!canAct())return;
+  if(!canSpend())return;
   const s=active(), z=state.zombies.find(v=>v.hp>0&&v.x===x&&v.y===y);
-  if(mode==='move'&&dist(s,{x,y})===1&&!blocked(x,y)&&s.actions>0){
-    s.x=x;s.y=y;s.actions--;playSound('move');pickup(s);mode='select';await save();refresh();
-  } else if(mode==='attack'&&z&&dist(s,z)<=weapons[equipped(s).key].range&&s.actions>0){
-    attack(s,z);mode='select';await save();refresh();
+  if(mode==='move'){
+    const {dist:reach,prev}=reachableCells(s,s.actions);
+    const k=key(x,y);
+    if(!(k in reach))return;
+    const path=pathTo(prev,k);
+    for(const stepKey of path){
+      const [sx,sy]=stepKey.split(',').map(Number);
+      s.x=sx;s.y=sy;s.actions--;
+      pickup(s);
+      if(state.winner)break;
+    }
+    playSound('move');
+    await save();refresh();
+  } else if(mode==='attack'&&z&&dist(s,z)<=weapons[equipped(s).key].range){
+    attack(s,z);
+    await save();refresh();
   }
 }
 function pickup(s){
