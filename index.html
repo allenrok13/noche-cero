@@ -28,30 +28,11 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 .choice small{display:block;margin-top:6px;font-weight:400;color:#d0dbe1}
 .layout{display:grid;grid-template-columns:minmax(330px,1fr) 350px;gap:14px;margin-top:14px}
 .panel{margin:0}
-.boardWrap{position:relative;max-width:780px;margin:auto}
-.board{width:100%;display:grid;grid-template-columns:repeat(12,1fr);gap:2px;background:#080b0d;padding:5px;border-radius:11px;aspect-ratio:1;animation:flicker 7s infinite;box-shadow:inset 0 0 40px 10px #000b}
-#lightOverlay{position:absolute;inset:5px;border-radius:8px;pointer-events:none;background:radial-gradient(circle at var(--lx,50%) var(--ly,50%),rgba(0,0,0,0) 0%,rgba(0,0,0,.1) 14%,rgba(0,0,0,.48) 38%,rgba(0,0,0,.82) 68%);transition:background .25s}
-.cell{position:relative;min-width:0;border-radius:2px;overflow:hidden}
-.cell.r0{background:#4b5348;background-image:repeating-linear-gradient(45deg,#525b4d 0 10px,#454d41 10px 20px)}
-.cell.r1{background:#4a4234;background-image:repeating-linear-gradient(90deg,#544a3a 0 26px,#463d30 26px 28px)}
-.cell.r2{background:#43473f;background-image:radial-gradient(circle at 30% 30%,#4b4f45 1px,transparent 1.5px),radial-gradient(circle at 70% 60%,#3c4038 1px,transparent 1.5px);background-size:9px 9px}
-.cell.r3{background:#33502f;background-image:radial-gradient(circle at 50% 50%,#3c5c37 1.5px,transparent 2px);background-size:11px 11px}
-.cell.wall{background:repeating-linear-gradient(0deg,#2b3138 0 6px,#22262c 6px 7px),repeating-linear-gradient(90deg,#2b3138 0 16px,#1c2024 16px 17px);box-shadow:inset 0 0 6px #000c}
-.cell.door{background:linear-gradient(100deg,#8a5530 0 48%,#5c3a20 48% 52%,#8a5530 52% 100%);box-shadow:inset 0 0 4px #0008}
-.cell.door.open{background:#20262c;box-shadow:inset 0 0 10px #000}
-.cell.search{box-shadow:inset 0 0 0 2px #b9903d;background-image:repeating-linear-gradient(45deg,transparent 0 6px,#b9903d22 6px 7px)}
-.cell.exit{background:#123b2c;animation:exitPulse 2s infinite}
-.cell.target{box-shadow:inset 0 0 0 3px #79d8ff}
-@keyframes exitPulse{0%,100%{box-shadow:inset 0 0 0 2px #3ddc84,0 0 8px 1px #2fdc7a55}50%{box-shadow:inset 0 0 0 2px #56f79e,0 0 18px 4px #2fdc7aaa}}
-.entity{position:absolute;inset:2px;display:grid;place-items:center;border-radius:6px;font-size:clamp(13px,2.7vw,24px);line-height:1}
-.entity::before{content:'';position:absolute;left:50%;bottom:-2px;width:55%;height:22%;background:radial-gradient(ellipse,rgba(0,0,0,.55) 0%,transparent 72%);transform:translateX(-50%);pointer-events:none}
-.survivor{background:#206b56}
-.survivor.other{background:#3c6082}
-.survivor.active{outline:2px solid #f4d86e;z-index:2;animation:pulseGlow 1.4s infinite}
-.zombie{background:#7d343a}
-.zombie.brute{background:#521a1f}
-.entity.hit{animation:shake .3s}
-.furn{position:absolute;inset:0;display:grid;place-items:center;opacity:.3;font-size:15px;pointer-events:none}
+.boardWrap{position:relative;max-width:780px;margin:auto;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#05070a;box-shadow:inset 0 0 40px 10px #000b}
+#boardWrap3d{width:100%;height:100%;touch-action:none;cursor:grab}
+#boardWrap3d canvas{display:block;width:100%;height:100%}
+#boardWrap3d:active{cursor:grabbing}
+#board3dHint{position:absolute;left:8px;bottom:6px;font-size:11px;color:#cfe0ea99;background:#0007;padding:3px 7px;border-radius:6px;pointer-events:none}
 .hp{position:absolute;right:1px;bottom:0;font-size:8px;color:#fff}
 .stat{flex:1 1 150px;min-width:145px;max-width:220px;padding:8px 9px;border:1px solid #2c3942;border-radius:9px;font-size:12.5px;background:#141b21}
 #survivors{display:flex;flex-wrap:wrap;gap:7px}
@@ -133,7 +114,7 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 </section>
 
 <main id="game" class="hidden"><div class="layout">
-  <section class="panel"><div class="boardWrap"><div id="board" class="board"></div><div id="lightOverlay"></div></div>
+  <section class="panel"><div class="boardWrap"><div id="boardWrap3d"></div><div id="board3dHint">🖱️ arrastra para rotar · rueda/pellizco para zoom · toca una casilla para actuar</div></div>
     <p class="help">🚪 puerta cerrada · 🟨 zona de búsqueda · 🔑 llave · 🎯 objetivo · 🟢 salida · 🧌 zombi brutal · 🔦 la luz sigue al superviviente activo</p>
   </section>
   <aside class="panel">
@@ -160,6 +141,8 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 </div>
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const firebaseConfig={apiKey:"AIzaSyAYQxlF76gthAJpGRSyB8DZXhBrL5snSFo",authDomain:"noche-cero.firebaseapp.com",projectId:"noche-cero",storageBucket:"noche-cero.firebasestorage.app",messagingSenderId:"843719164928",appId:"1:843719164928:web:3a5730c10b7fa0ceb004e5",databaseURL:"https://noche-cero-default-rtdb.europe-west1.firebasedatabase.app"};
 firebase.initializeApp(firebaseConfig);
@@ -447,65 +430,174 @@ function refresh(){
   const hint=state.winner?'Partida terminada.':!canAct()?'Espera el turno correspondiente.':mode==='move'?'Elige una casilla adyacente.':mode==='attack'?'Elige un zombi dentro del alcance de tu arma.':'Elige una acción o termina el turno.';
   document.getElementById('modeHint').textContent=hint;
   for(const id of ['moveBtn','attackBtn','searchBtn','doorBtn','healBtn','reloadBtn','endBtn'])document.getElementById(id).disabled=!canAct();
-  renderBoard();
+  if(!threeReady)initThree();
+  updateBoard3D();
   const turnKey=state.turn+'-'+state.active;
   if(turnKey!==lastTurnKey){lastTurnKey=turnKey;showTurnBanner(s.name);}
   if(state.winner&&!endShown){endShown=true;showEndBanner(state.winner);}
 }
 
+// --- Escena 3D ---
+let threeReady=false, scene, camera, renderer, controls, raycaster, flashLight, exitMesh, dynamicGroup, down3dX=0, down3dY=0;
+const roomColors=[0x5b6a51,0x54492f,0x43473f,0x2f4a2c];
 function roomTint(x,y){return (x<6?0:1)+(y<6?0:2)}
-function furnitureIcon(x,y){
-  const set=['📦','🪑','🛢️','🚗','🧱','🪴'];
-  const h=(x*31+y*17)%100;
-  if(h>=15)return null;
-  return set[(x*7+y*13)%set.length];
-}
 
-function renderBoard(){
-  const b=document.getElementById('board');
-  b.innerHTML='';
-  const active_s=active(), lightEl=document.getElementById('lightOverlay');
-  if(lightEl){
-    lightEl.style.setProperty('--lx',((active_s.x+0.5)/W*100)+'%');
-    lightEl.style.setProperty('--ly',((active_s.y+0.5)/H*100)+'%');
-  }
+function initThree(){
+  if(threeReady)return;
+  threeReady=true;
+  const container=document.getElementById('boardWrap3d');
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x05070a);
+  scene.fog=new THREE.Fog(0x05070a,9,24);
+
+  camera=new THREE.PerspectiveCamera(50,1,0.1,100);
+  camera.position.set(W/2,9.5,H*1.05);
+
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  container.appendChild(renderer.domElement);
+
+  controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.target.set(W/2,0,H/2);
+  controls.maxPolarAngle=Math.PI/2.1;
+  controls.minDistance=4;controls.maxDistance=26;
+  controls.update();
+
+  scene.add(new THREE.AmbientLight(0x4a5b6e,0.55));
+  scene.add(new THREE.HemisphereLight(0x3a4a55,0x0a0a0a,0.35));
+  flashLight=new THREE.PointLight(0xffe6bd,1.6,10,2);
+  flashLight.position.set(1,1.8,1);
+  scene.add(flashLight);
+
+  dynamicGroup=new THREE.Group();
+  scene.add(dynamicGroup);
+
+  buildStaticBoard();
+
+  raycaster=new THREE.Raycaster();
+  renderer.domElement.addEventListener('pointerdown',e=>{down3dX=e.clientX;down3dY=e.clientY;});
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(Math.hypot(e.clientX-down3dX,e.clientY-down3dY)<6)onBoardClick(e);
+  });
+
+  window.addEventListener('resize',resizeThree);
+  resizeThree();
+  animate();
+}
+function resizeThree(){
+  const container=document.getElementById('boardWrap3d');
+  const size=container.clientWidth||320;
+  renderer.setSize(size,size);
+  camera.aspect=1;
+  camera.updateProjectionMatrix();
+}
+function buildStaticBoard(){
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:0x02040a}));
+  ground.rotation.x=-Math.PI/2;ground.position.y=-0.5;
+  scene.add(ground);
+  const floorGeo=new THREE.BoxGeometry(0.96,0.12,0.96);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    const k=key(x,y), c=document.createElement('div');
-    const wall=isWall(x,y), door=isDoor(x,y);
-    c.className='cell r'+roomTint(x,y)
-      +(wall?' wall':'')
-      +(door?' door'+(state.doors[k]?' open':''):'')
-      +(searches.includes(k)?' search':'')
-      +(k===special.exit?' exit':'')
-      +(k===special.objective&&!state.objective?' target':'');
-    if(k===special.key&&!state.key)c.textContent='🔑';
-    else if(k===special.objective&&!state.objective)c.textContent='🎯';
-    else if(k===special.exit)c.textContent='🟢';
-    else if(door&&!state.doors[k])c.textContent='🚪';
-    else if(!wall){
-      const f=furnitureIcon(x,y);
-      if(f&&!searches.includes(k))c.innerHTML='<span class="furn">'+f+'</span>';
-    }
-    c.onclick=()=>clickCell(x,y);
-    const s=state.survivors.find(v=>v.hp>0&&v.x===x&&v.y===y),
-          z=state.zombies.find(v=>v.hp>0&&v.x===x&&v.y===y);
-    if(s){
-      const isFlash=s.id===flashId&&Date.now()<flashUntil;
-      const e=document.createElement('div');
-      e.className='entity survivor '+(s.id===state.active?'active':'other')+(isFlash?' hit':'');
-      e.innerHTML=s.emoji+'<span class="hp">❤'+s.hp+'</span>';
-      c.appendChild(e);
-    }
-    if(z){
-      const isFlash=z.id===flashId&&Date.now()<flashUntil;
-      const icon=z.type==='runner'?'🏃':z.type==='brute'?'🧌':'🧟';
-      const e=document.createElement('div');
-      e.className='entity zombie'+(z.type==='brute'?' brute':'')+(isFlash?' hit':'');
-      e.innerHTML=icon+'<span class="hp">❤'+z.hp+'</span>';
-      c.appendChild(e);
-    }
-    b.appendChild(c);
+    if(isWall(x,y))continue;
+    const tile=new THREE.Mesh(floorGeo,new THREE.MeshStandardMaterial({color:roomColors[roomTint(x,y)],roughness:0.95}));
+    tile.position.set(x+0.5,-0.06,y+0.5);
+    tile.receiveShadow=true;
+    tile.userData={x,y};
+    tile.name='floor';
+    scene.add(tile);
   }
+  const wallGeo=new THREE.BoxGeometry(1,1.3,1);
+  const wallMat=new THREE.MeshStandardMaterial({color:0x262c32,roughness:1});
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(isWall(x,y)){
+      const wm=new THREE.Mesh(wallGeo,wallMat);
+      wm.position.set(x+0.5,0.6,y+0.5);
+      wm.castShadow=true;wm.receiveShadow=true;
+      scene.add(wm);
+    }
+  }
+  const [ex,ey]=special.exit.split(',').map(Number);
+  exitMesh=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.05,0.9),new THREE.MeshStandardMaterial({color:0x2fdc7a,emissive:0x1f7a4a,emissiveIntensity:0.9}));
+  exitMesh.position.set(ex+0.5,-0.02,ey+0.5);
+  scene.add(exitMesh);
+  for(const k of searches){
+    const [sx,sy]=k.split(',').map(Number);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(0.28,0.4,20),new THREE.MeshBasicMaterial({color:0xb9903d,side:THREE.DoubleSide}));
+    ring.rotation.x=-Math.PI/2;ring.position.set(sx+0.5,0.01,sy+0.5);
+    scene.add(ring);
+  }
+}
+function makeHumanoid(bodyColor,headColor,scale){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.16*scale,0.2*scale,0.55*scale,10),new THREE.MeshStandardMaterial({color:bodyColor}));
+  body.position.y=0.32*scale;body.castShadow=true;
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.15*scale,12,10),new THREE.MeshStandardMaterial({color:headColor}));
+  head.position.y=0.66*scale;head.castShadow=true;
+  g.add(body,head);
+  return g;
+}
+function updateBoard3D(){
+  if(!threeReady)return;
+  while(dynamicGroup.children.length)dynamicGroup.remove(dynamicGroup.children[0]);
+  for(const k of Object.keys(state.doors)){
+    if(!state.doors[k]){
+      const [dx,dy]=k.split(',').map(Number);
+      const dm=new THREE.Mesh(new THREE.BoxGeometry(0.92,0.9,0.92),new THREE.MeshStandardMaterial({color:0x8a5530,roughness:0.8}));
+      dm.position.set(dx+0.5,0.4,dy+0.5);dm.castShadow=true;
+      dynamicGroup.add(dm);
+    }
+  }
+  const bob=Math.sin(Date.now()/300)*0.05;
+  if(!state.key){
+    const [kx,ky]=special.key.split(',').map(Number);
+    const km=new THREE.Mesh(new THREE.OctahedronGeometry(0.16),new THREE.MeshStandardMaterial({color:0xf4d86e,emissive:0x8a6e1a,emissiveIntensity:0.8}));
+    km.position.set(kx+0.5,0.35+bob,ky+0.5);
+    dynamicGroup.add(km);
+  }
+  if(state.key&&!state.objective){
+    const [ox,oy]=special.objective.split(',').map(Number);
+    const om=new THREE.Mesh(new THREE.TetrahedronGeometry(0.18),new THREE.MeshStandardMaterial({color:0x79d8ff,emissive:0x1a4a6e,emissiveIntensity:0.8}));
+    om.position.set(ox+0.5,0.35+bob,oy+0.5);
+    dynamicGroup.add(om);
+  }
+  for(const s of state.survivors){
+    if(s.hp<=0)continue;
+    const isFlash=s.id===flashId&&Date.now()<flashUntil;
+    const color=isFlash?0xff5555:(s.id===state.active?0x3ddc84:0x3c6082);
+    const tok=makeHumanoid(color,0xf1c27d,1);
+    tok.position.set(s.x+0.5,0,s.y+0.5);
+    if(s.id===state.active){
+      const ring=new THREE.Mesh(new THREE.RingGeometry(0.32,0.4,20),new THREE.MeshBasicMaterial({color:0xf4d86e,side:THREE.DoubleSide}));
+      ring.rotation.x=-Math.PI/2;ring.position.y=0.02;
+      tok.add(ring);
+      flashLight.position.set(s.x+0.5,1.8,s.y+0.5);
+    }
+    dynamicGroup.add(tok);
+  }
+  for(const z of state.zombies){
+    if(z.hp<=0)continue;
+    const isFlash=z.id===flashId&&Date.now()<flashUntil;
+    const base=z.type==='brute'?0x521a1f:(z.type==='runner'?0x9a4a2a:0x7d343a);
+    const tok=makeHumanoid(isFlash?0xff9999:base,0x4a3a3a,z.type==='brute'?1.3:1);
+    tok.position.set(z.x+0.5,0,z.y+0.5);
+    dynamicGroup.add(tok);
+  }
+}
+function onBoardClick(e){
+  if(!threeReady)return;
+  const rect=renderer.domElement.getBoundingClientRect();
+  const mx=((e.clientX-rect.left)/rect.width)*2-1;
+  const my=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(new THREE.Vector2(mx,my),camera);
+  const hits=raycaster.intersectObjects(scene.children.filter(o=>o.name==='floor'));
+  if(hits.length){
+    const {x,y}=hits[0].object.userData;
+    clickCell(x,y);
+  }
+}
+function animate(){
+  requestAnimationFrame(animate);
+  if(exitMesh)exitMesh.material.emissiveIntensity=0.6+Math.sin(Date.now()/400)*0.35;
+  if(controls)controls.update();
+  if(renderer&&scene&&camera)renderer.render(scene,camera);
 }
 
 async function clickCell(x,y){
