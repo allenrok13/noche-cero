@@ -116,7 +116,7 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 
 <main id="game" class="hidden"><div class="layout">
   <section class="panel"><div class="boardWrap"><div id="boardWrap3d"></div><div id="board3dHint">🖱️ arrastra para rotar · rueda/pellizco para zoom · toca una casilla para actuar</div></div>
-    <p class="help">🚪 puerta (abre una sala) · 🔷 casillas a las que puedes moverte (toca la más lejana para ir directo) · 🔎 zona de búsqueda: arma (10 tipos) o bonificación (10 tipos) · 🔑 llave · 🎯 objetivo · 🟢 salida · 🧌 zombi brutal · 🔦 la luz sigue al superviviente activo</p>
+    <p class="help">🚪 puerta (hace ruido y puede revelar un zombi) · 🔷 casillas a las que puedes moverte (toca la más lejana para ir directo) · 🔎 zona de búsqueda: arma (10 tipos) o bonificación (10 tipos) · 🔑 llave · 🎯 objetivo · 🟢 salida · 🧌 zombi brutal · 💀 abominación · los zombis sin verte van hacia el ruido · 🔦 la luz sigue al superviviente activo</p>
   </section>
   <aside class="panel">
     <div class="title">Supervivientes</div><div id="survivors"></div>
@@ -139,6 +139,11 @@ input{width:190px;max-width:100%;padding:10px;border-radius:9px;background:#0c12
 <div id="endBanner" class="hidden endOverlay">
   <div id="endBannerText"></div>
   <button class="good" onclick="location.reload()">🔄 Jugar de nuevo</button>
+</div>
+<div id="levelUpModal" class="hidden endOverlay">
+  <div style="font-size:clamp(24px,5vw,36px);font-weight:900;color:#f4d86e">⭐ ¡Nivel superior!</div>
+  <div id="levelUpWho" class="dim" style="font-size:16px"></div>
+  <div id="levelUpOptions" class="choice" style="max-width:640px"></div>
 </div>
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -182,6 +187,7 @@ const walls=new Set([
   '5,5','6,5','5,6','6,6'
 ]);
 const doorTiles={'2,3':false,'9,3':false,'2,8':false,'9,8':false};
+const DOOR_TO_ROOM={'2,3':'2,2','9,3':'9,2','2,8':'2,9','9,8':'9,9'};
 for(const k of Object.keys(doorTiles)) walls.delete(k);
 const searches=['2,4','9,4','2,7','9,7','6,1','6,10','1,6','10,6','2,2','9,2','2,9','9,9'];
 const special={key:'6,3',objective:'6,8',exit:'11,10'};
@@ -191,30 +197,31 @@ function survivor(id,defKey,x,y){
   const d=SURVIVOR_DEFS[defKey];
   const maxHp=5+d.hpBonus;
   const bag=d.weapon==='knife'?[{key:'knife',ammo:null}]:[{key:'knife',ammo:null},{key:d.weapon,ammo:weapons[d.weapon].ammo}];
-  return {id,def:defKey,name:d.name,emoji:d.emoji,x,y,hp:maxHp,maxHp,actions:0,xp:0,level:1,bag,activeWeapon:bag.length-1,inventory:['botiquín'],searched:[],bonusNextTurn:0,nextMeleeDouble:false,nextCrit:false};
+  return {id,def:defKey,name:d.name,emoji:d.emoji,x,y,hp:maxHp,maxHp,actions:0,xp:0,level:1,bag,activeWeapon:bag.length-1,inventory:['botiquín'],searched:[],bonusNextTurn:0,nextMeleeDouble:false,nextCrit:false,extraActions:0,aimBonus:0,extraMeleeDmg:0,extraNoiseCut:0,bagCapacity:5};
 }
 function equipped(s){return s.bag[s.activeWeapon]}
 function rollActionDie(s){
   const def=SURVIVOR_DEFS[s.def];
-  s.actions=2+Math.floor(Math.random()*3)+(def.diceBonus||0)+(s.bonusNextTurn||0);
+  s.actions=2+Math.floor(Math.random()*3)+(def.diceBonus||0)+(s.bonusNextTurn||0)+(s.extraActions||0);
   s.bonusNextTurn=0;
   return s.actions;
 }
 function makeZombie(x,y,turn){
   const roll=Math.random();
   let type='walker', hp=1, xp=1;
-  if(turn>=5 && roll<0.12){type='brute';hp=3;xp=3;}
+  if(turn>=8 && roll<0.05){type='abomination';hp=6;xp=6;}
+  else if(turn>=5 && roll<0.12){type='brute';hp=3;xp=3;}
   else if(roll<0.3){type='runner';hp=1;xp=2;}
   return {id:Date.now()+Math.random(),type,x,y,hp,maxHp:hp,xp};
 }
-function zombieLabel(t){return t==='runner'?'Un corredor':t==='brute'?'Un brutal':'Un walker';}
+function zombieLabel(t){return t==='runner'?'Un corredor':t==='brute'?'Un brutal':t==='abomination'?'Una abominación':'Un walker';}
 
 function initial(defs){
   const s0=survivor(0,defs[0],0,0), s1=survivor(1,defs[1],11,11);
   rollActionDie(s0);
   return {
     started:true, solo:true, turn:1, active:0, winner:null,
-    doors:{...doorTiles}, key:false, objective:false, noise:0,
+    doors:{...doorTiles}, key:false, objective:false, noise:0, noiseSource:null, pendingLevelUp:null,
     survivors:[s0,s1],
     zombies:[
       {id:1,type:'walker',x:5,y:1,hp:1,maxHp:1,xp:1},
@@ -233,6 +240,22 @@ function isOpen(x,y){return !isDoor(x,y)||state.doors[key(x,y)]}
 function blocked(x,y){return isWall(x,y)||!isOpen(x,y)||state.survivors.some(s=>s.hp>0&&s.x===x&&s.y===y)||state.zombies.some(z=>z.hp>0&&z.x===x&&z.y===y)}
 function dist(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)}
 function adjacent(a,b){return dist(a,b)===1}
+function sightBlocked(x,y){return isWall(x,y)||(isDoor(x,y)&&!state.doors[key(x,y)]);}
+function hasLOS(a,b){
+  const steps=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
+  if(steps===0)return true;
+  for(let i=1;i<steps;i++){
+    const t=i/steps;
+    const cx=Math.round(a.x+(b.x-a.x)*t), cy=Math.round(a.y+(b.y-a.y)*t);
+    if(sightBlocked(cx,cy))return false;
+  }
+  return true;
+}
+function addNoise(amount,x,y){
+  if(amount<=0)return;
+  state.noise=Math.min(20,(state.noise||0)+amount);
+  state.noiseSource={x,y};
+}
 function reachableCells(s,maxSteps){
   const startKey=key(s.x,s.y);
   const distMap={[startKey]:0}, prev={}, queue=[[s.x,s.y]];
@@ -261,10 +284,37 @@ function pathTo(prev,destKey){
 }
 function active(){return state.survivors[state.active]}
 function log(t){state.log.unshift(t);state.log=state.log.slice(0,100)}
+const PERKS={
+  vida:{name:'❤️ Resistencia',desc:'+2 vida máxima',apply(s){s.maxHp+=2;s.hp=Math.min(s.maxHp,s.hp+2);}},
+  agil:{name:'⚡ Ágil',desc:'+1 acción en cada tirada de dado',apply(s){s.extraActions=(s.extraActions||0)+1;}},
+  punteria:{name:'🎯 Puntería',desc:'Más fácil acertar con cualquier arma',apply(s){s.aimBonus=(s.aimBonus||0)+1;}},
+  fuerte:{name:'💪 Fuerte',desc:'+1 daño cuerpo a cuerpo',apply(s){s.extraMeleeDmg=(s.extraMeleeDmg||0)+1;}},
+  sigilo:{name:'🤫 Sigiloso',desc:'-1 ruido en cada ataque',apply(s){s.extraNoiseCut=(s.extraNoiseCut||0)+1;}},
+  mochila:{name:'🎒 Mochila grande',desc:'+1 hueco de mochila',apply(s){s.bagCapacity=(s.bagCapacity||5)+1;}}
+};
+function pickRandomPerks(n){
+  const keys=Object.keys(PERKS).sort(()=>Math.random()-0.5);
+  return keys.slice(0,n);
+}
 function addXp(s,n){
   s.xp+=n;
   const next=s.level*5;
-  if(s.xp>=next){s.level++;s.maxHp++;s.hp=Math.min(s.maxHp,s.hp+1);log('⭐ '+s.name+' alcanza nivel '+s.level+' y gana 1 de vida máxima.')}
+  if(s.xp>=next){
+    s.level++;
+    log('⭐ '+s.name+' alcanza nivel '+s.level+'. Elige una habilidad.');
+    state.pendingLevelUp={sid:s.id,options:pickRandomPerks(3)};
+  }
+}
+function applyLevelUpChoice(key){
+  if(!state.pendingLevelUp)return;
+  const s=state.survivors.find(v=>v.id===state.pendingLevelUp.sid);
+  const perk=PERKS[key];
+  if(s&&perk){
+    perk.apply(s);
+    log('✅ '+s.name+' elige '+perk.name+' ('+perk.desc+').');
+  }
+  state.pendingLevelUp=null;
+  save();refresh();
 }
 
 auth.signInAnonymously().then(r=>{uid=r.user.uid;status('Conectado. Puedes crear o unirte a una sala.','ok')}).catch(e=>status('Firebase no está disponible: '+e.message,'error'));
@@ -364,7 +414,7 @@ async function joinRoom(){
   const bag=d.weapon==='knife'?[{key:'knife',ammo:null}]:[{key:'knife',ammo:null},{key:d.weapon,ammo:weapons[d.weapon].ammo}];
   await db.ref('rooms/'+room+'/players/'+uid).set(1);
   await db.ref('rooms/'+room+'/names/'+uid).set(d.name);
-  await db.ref('rooms/'+room+'/state/survivors/1').update({def:joinPick,name:d.name,emoji:d.emoji,maxHp:5+d.hpBonus,hp:5+d.hpBonus,bag,activeWeapon:bag.length-1,bonusNextTurn:0,nextMeleeDouble:false,nextCrit:false});
+  await db.ref('rooms/'+room+'/state/survivors/1').update({def:joinPick,name:d.name,emoji:d.emoji,maxHp:5+d.hpBonus,hp:5+d.hpBonus,bag,activeWeapon:bag.length-1,bonusNextTurn:0,nextMeleeDouble:false,nextCrit:false,extraActions:0,aimBonus:0,extraMeleeDmg:0,extraNoiseCut:0,bagCapacity:5});
   listen();showLobby();
 }
 function listen(){
@@ -446,7 +496,7 @@ function showEndBanner(text){
 
 // --- Juego ---
 function setMode(m){if(canAct())mode=m;refresh()}
-function canAct(){return state&&!state.winner&&(state.solo||state.active===player)&&active().hp>0}
+function canAct(){return state&&!state.winner&&!state.pendingLevelUp&&(state.solo||state.active===player)&&active().hp>0}
 function canSpend(){return canAct()&&active().actions>0}
 
 function refresh(){
@@ -471,6 +521,18 @@ function refresh(){
   document.getElementById('modeHint').textContent=hint;
   for(const id of ['moveBtn','attackBtn','searchBtn','doorBtn','healBtn','reloadBtn'])document.getElementById(id).disabled=!canSpend();
   document.getElementById('endBtn').disabled=!canAct();
+  const lvlModal=document.getElementById('levelUpModal');
+  if(state.pendingLevelUp){
+    const who=state.survivors.find(v=>v.id===state.pendingLevelUp.sid);
+    document.getElementById('levelUpWho').textContent=who?who.emoji+' '+who.name+' · Nivel '+who.level:'';
+    document.getElementById('levelUpOptions').innerHTML=state.pendingLevelUp.options.map(key=>{
+      const p=PERKS[key];
+      return '<button class="good" onclick="applyLevelUpChoice(\''+key+'\')">'+p.name+'<small>'+p.desc+'</small></button>';
+    }).join('');
+    lvlModal.classList.remove('hidden');
+  } else {
+    lvlModal.classList.add('hidden');
+  }
   if(!threeReady)initThree();
   updateBoard3D();
   const turnKey=state.turn+'-'+state.active;
@@ -739,9 +801,10 @@ function updateBoard3D(){
   for(const z of state.zombies){
     if(z.hp<=0)continue;
     const isFlash=z.id===flashId&&Date.now()<flashUntil;
-    const base=z.type==='brute'?0x521a1f:(z.type==='runner'?0x9a4a2a:0x7d343a);
-    const scale=z.type==='brute'?1.3:1;
-    const tok=makeHumanoid(isFlash?0xff9999:base,0x4a3a3a,scale,true);
+    const base=z.type==='abomination'?0x2a1030:(z.type==='brute'?0x521a1f:(z.type==='runner'?0x9a4a2a:0x7d343a));
+    const scale=z.type==='abomination'?1.7:(z.type==='brute'?1.3:1);
+    const headColor=z.type==='abomination'?0x8a1030:0x4a3a3a;
+    const tok=makeHumanoid(isFlash?0xff9999:base,headColor,scale,true);
     tok.position.set(z.x+0.5,0,z.y+0.5);
     const label=makeLabel('❤'+z.hp,'#ffcccc');
     label.position.y=0.85*scale;
@@ -809,13 +872,14 @@ function attack(s,z){
   s.actions--;
   if(w.ammo!==null)eq.ammo--;
   const forcedCrit=s.nextCrit, doubleMelee=w.melee&&s.nextMeleeDouble;
+  const hitThreshold=Math.max(2,w.hit-(s.aimBonus||0));
   let rolls=[],hits=0,dmg=0;
   for(let i=0;i<w.dice;i++){
     const r=forcedCrit?6:(1+Math.floor(Math.random()*6));
     rolls.push(r);
-    if(r>=w.hit){
+    if(r>=hitThreshold){
       hits++;
-      let d=w.damage+(w.melee?(def.meleeBonus||0):0);
+      let d=w.damage+(w.melee?(def.meleeBonus||0)+(s.extraMeleeDmg||0):0);
       if(doubleMelee)d*=2;
       dmg+=d;
       if((w.crit&&r===6)||forcedCrit)dmg+=d;
@@ -824,8 +888,8 @@ function attack(s,z){
   if(forcedCrit){s.nextCrit=false;log('🍀 '+s.name+' activa el amuleto de la suerte: golpe crítico garantizado.');}
   if(doubleMelee){s.nextMeleeDouble=false;log('🥊 '+s.name+' golpea con el doble de fuerza gracias a los guantes reforzados.');}
   z.hp-=dmg;
-  const noiseAdd=Math.max(0,w.noise-(def.noiseCut||0));
-  state.noise=Math.min(20,(state.noise||0)+noiseAdd);
+  const noiseAdd=Math.max(0,w.noise-(def.noiseCut||0)-(s.extraNoiseCut||0));
+  addNoise(noiseAdd,s.x,s.y);
   flashId=z.id;flashUntil=Date.now()+300;
   playSound(hits>0?'hit':'miss');
   log(s.name+' ataca con '+w.name+' <span class="dice">['+rolls.join(' ')+']</span>: '+hits+' impacto'+(hits!==1?'s':'')+', '+dmg+' daño. 🔊+'+noiseAdd);
@@ -844,13 +908,13 @@ async function searchHere(){
   playSound('search');
   if(Math.random()<0.5){
     const found=WEAPON_LOOT[Math.floor(Math.random()*WEAPON_LOOT.length)];
-    if(s.bag.length<5){
+    if(s.bag.length<(s.bagCapacity||5)){
       s.bag.push({key:found,ammo:weapons[found].ammo});
       s.activeWeapon=s.bag.length-1;
       log('🔎 '+s.name+' guarda '+weapons[found].name+' en la mochila.');
     } else {
       s.bag[s.activeWeapon]={key:found,ammo:weapons[found].ammo};
-      log('🔎 '+s.name+' encuentra '+weapons[found].name+' y sustituye el arma equipada (mochila llena, máx. 5).');
+      log('🔎 '+s.name+' encuentra '+weapons[found].name+' y sustituye el arma equipada (mochila llena, máx. '+(s.bagCapacity||5)+').');
     }
   } else {
     const found=BONUS_LOOT[Math.floor(Math.random()*BONUS_LOOT.length)];
@@ -904,6 +968,17 @@ async function openDoor(){
   s.actions--;state.doors[k]=true;
   playSound('door');
   log('🚪 '+s.name+' abre una puerta.');
+  addNoise(1,s.x,s.y);
+  const roomKey=DOOR_TO_ROOM[k];
+  if(roomKey){
+    const [rx,ry]=roomKey.split(',').map(Number);
+    const occupied=state.survivors.some(v=>v.hp>0&&v.x===rx&&v.y===ry)||state.zombies.some(v=>v.hp>0&&v.x===rx&&v.y===ry);
+    if(!occupied&&Math.random()<0.35){
+      state.zombies.push(makeZombie(rx,ry,state.turn));
+      log('😱 ¡Un zombi esperaba dentro de la sala!');
+      playSound('zombie');
+    }
+  }
   await save();refresh();
 }
 function parse(k){const [x,y]=k.split(',').map(Number);return{x,y}}
@@ -952,19 +1027,28 @@ function zombiePhase(){
   playSound('zombie');
   log('🧟 Fase zombi…');
   for(const z of state.zombies.filter(v=>v.hp>0)){
-    const target=state.survivors.filter(v=>v.hp>0).sort((a,b)=>dist(z,a)-dist(z,b))[0];
-    if(!target)break;
+    const visible=state.survivors.filter(v=>v.hp>0&&hasLOS(z,v));
+    let moveTarget=null;
+    if(visible.length){
+      moveTarget=visible.sort((a,b)=>dist(z,a)-dist(z,b))[0];
+    } else if((state.noise||0)>0&&state.noiseSource){
+      moveTarget={x:state.noiseSource.x,y:state.noiseSource.y};
+    }
+    if(!moveTarget)continue;
     const steps=z.type==='runner'?2:1;
     for(let step=0;step<steps;step++){
-      if(adjacent(z,target)){
-        target.hp--;
-        flashId=target.id;flashUntil=Date.now()+350;
+      const bitable=state.survivors.find(v=>v.hp>0&&adjacent(z,v));
+      if(bitable){
+        const dmg=(z.type==='brute'||z.type==='abomination')?2:1;
+        bitable.hp-=dmg;
+        flashId=bitable.id;flashUntil=Date.now()+350;
         playSound('bite');
-        log('🩸 '+zombieLabel(z.type)+' hiere a '+target.name+'.');
+        log('🩸 '+zombieLabel(z.type)+' hiere a '+bitable.name+' ('+dmg+' daño).');
         break;
       }
-      const dx=Math.sign(target.x-z.x), dy=Math.sign(target.y-z.y),
-            opts=Math.abs(target.x-z.x)>=Math.abs(target.y-z.y)?[[dx,0],[0,dy]]:[[0,dy],[dx,0]];
+      if(z.x===moveTarget.x&&z.y===moveTarget.y)break;
+      const dx=Math.sign(moveTarget.x-z.x), dy=Math.sign(moveTarget.y-z.y),
+            opts=Math.abs(moveTarget.x-z.x)>=Math.abs(moveTarget.y-z.y)?[[dx,0],[0,dy]]:[[0,dy],[dx,0]];
       let moved=false;
       for(const [a,b] of opts){
         const nx=z.x+a, ny=z.y+b;
@@ -993,6 +1077,7 @@ function zombiePhase(){
     if(spawned)log('🚨 El ruido atrae una horda de '+spawned+' zombis.');
   } else {
     state.noise=Math.max(0,(state.noise||0)-1);
+    if(state.noise===0)state.noiseSource=null;
   }
   checkEnd();
 }
